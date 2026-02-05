@@ -14,22 +14,23 @@ def year_fraction(d0, d1) -> float:
     return (d1 - d0).days / 365.25
 
 def policy_weight(row, pred_regime: int) -> float:
-    """
-    pred_regime: 2=STRESS, 1=TREND, 0=CHOP
-    """
+    # Force scalars (pandas can be annoying)
+    close = float(row["Close"])
+    ma20  = float(row["ma_20w"])
+    dist  = float(row["dist_ma20"])
+
     if pred_regime == 2:
         return CONFIG["w_stress"]
 
     if pred_regime == 1:
-        if CONFIG["trend_requires_above_ma20"] and not (row["Close"] > row["ma_20w"]):
+        if CONFIG["trend_requires_above_ma20"] and not (close > ma20):
             return 0.0
         return CONFIG["w_trend"]
 
-    # CHOP: mean-reversion entry if far below MA20
-    if row["dist_ma20"] <= CONFIG["mr_dist_ma20_entry"]:
+    # CHOP mean-reversion entry
+    if dist <= CONFIG["mr_dist_ma20_entry"]:
         return CONFIG["w_chop_mr"]
     return CONFIG["w_chop_base"]
-
 def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
     # Build features (safe)
     d = add_regime_features(df_prices)
