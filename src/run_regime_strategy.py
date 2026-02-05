@@ -15,7 +15,7 @@ data = make_regime_dataset(df)
 
 model = Pipeline([
     ("scaler", StandardScaler()),
-    ("clf", LogisticRegression(max_iter=800, class_weight="balanced", multi_class="auto"))
+    ("clf", LogisticRegression(max_iter=800, class_weight="balanced"))
 ])
 
 # Train on most history except last 5 years (basic out-of-sample holdout)
