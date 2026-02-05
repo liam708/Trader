@@ -21,9 +21,9 @@ def year_fraction(d0, d1) -> float:
     return (d1 - d0).days / 365.25
 
 def policy_weight(d: pd.DataFrame, i: int, pred_regime: int) -> float:
-    close = scalar(d, i, "Close")
-    ma20  = scalar(d, i, "ma_20w")
-    dist  = scalar(d, i, "dist_ma20")
+    close = float(d.iloc[i]["Close"])
+    ma20  = float(d.iloc[i]["ma_20w"])
+    dist  = float(d.iloc[i]["dist_ma20"])
 
     if pred_regime == 2:
         return CONFIG["w_stress"]
