@@ -1,8 +1,8 @@
 import pandas as pd
 
-def backtest_weekly(df: pd.DataFrame, signal_fn, hold_weeks=4, cost_bps=2):
-    equity = 0.0
-    peak = 0.0
+def backtest_weekly(df: pd.DataFrame, signal_fn, hold_weeks=4, cost_bps=2, start_capital=10_000.0):
+    equity = start_capital
+    peak = start_capital
     max_dd = 0.0
     trades = []
 
@@ -13,16 +13,17 @@ def backtest_weekly(df: pd.DataFrame, signal_fn, hold_weeks=4, cost_bps=2):
     for i in range(len(df) - hold_weeks - 1):
         px = float(df.loc[i, "Close"])
 
-        # Exit after fixed holding period
+        # exit
         if in_pos and i == entry_i + hold_weeks:
             exit_px = float(df.loc[i, "Close"])
             gross_ret = (exit_px / entry_px) - 1.0
-            cost = (cost_bps / 10_000)  # round-trip cost
+            cost = (cost_bps / 10_000)  # round-trip
             net_ret = gross_ret - cost
 
-            equity += net_ret
+            equity *= (1.0 + net_ret)
             peak = max(peak, equity)
-            max_dd = max(max_dd, peak - equity)
+            dd = (peak - equity) / peak
+            max_dd = max(max_dd, dd)
 
             trades.append({
                 "entry_date": df.loc[entry_i, "date"],
@@ -30,21 +31,22 @@ def backtest_weekly(df: pd.DataFrame, signal_fn, hold_weeks=4, cost_bps=2):
                 "entry_px": entry_px,
                 "exit_px": exit_px,
                 "net_ret": net_ret,
+                "equity": equity,
             })
 
             in_pos = False
             entry_i = None
             entry_px = None
 
-        # Enter only if flat
+        # enter
         if (not in_pos) and signal_fn(df, i):
             in_pos = True
             entry_i = i
             entry_px = px
 
     return {
-        "equity": equity,
-        "max_drawdown": max_dd,
+        "final_equity": equity,
+        "max_drawdown_pct": max_dd,
         "n_trades": len(trades),
         "trades": pd.DataFrame(trades),
     }
