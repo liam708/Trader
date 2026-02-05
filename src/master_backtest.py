@@ -10,13 +10,20 @@ from regime_features import add_regime_features, FEATURES
 from regime_labels import add_regime_labels
 from metrics import compute_metrics
 
+def scalar(d: pd.DataFrame, i: int, col: str) -> float:
+    v = d.loc[i, col]
+    # If duplicate columns exist, pandas returns a Series
+    if isinstance(v, pd.Series):
+        v = v.iloc[0]
+    return float(v)
+    
 def year_fraction(d0, d1) -> float:
     return (d1 - d0).days / 365.25
 
-def policy_weight(d, i, pred_regime: int) -> float:
-    close = float(d.at[i, "Close"])
-    ma20  = float(d.at[i, "ma_20w"])
-    dist  = float(d.at[i, "dist_ma20"])
+def policy_weight(d: pd.DataFrame, i: int, pred_regime: int) -> float:
+    close = scalar(d, i, "Close")
+    ma20  = scalar(d, i, "ma_20w")
+    dist  = scalar(d, i, "dist_ma20")
 
     if pred_regime == 2:
         return CONFIG["w_stress"]
@@ -35,7 +42,9 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
 
     # Add labels (only used for training targets)
     d = add_regime_labels(d, stress_dd_4w=CONFIG["stress_dd_4w"])
-
+    # If duplicate column names exist, keep the first occurrence
+    if d.columns.duplicated().any():
+        d = d.loc[:, ~d.columns.duplicated()]
     # Drop rows without features/labels
     needed = ["date", "Close", "ma_20w", "dist_ma20"] + FEATURES + ["regime"]
     d = d[needed].dropna().reset_index(drop=True)
