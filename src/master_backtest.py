@@ -105,7 +105,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
             "net_ret": net_ret,
             "equity": equity,
         })
-    prev_w = w
+        prev_w = w
     return pd.DataFrame(logs)
 
 
