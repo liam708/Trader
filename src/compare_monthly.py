@@ -28,8 +28,7 @@ def main():
 
     # ===== MASTER =====
     master = run_master_backtest(df)
-    m_month = rolling_monthly_metrics(master)
-
+    m_month = rolling_monthly_metrics(master, start_capital=float(CONFIG["start_capital"]))
     # ===== BUY & HOLD =====
     feat = add_regime_features(df).dropna(subset=["ma_20w"]).reset_index(drop=True)
     w_bh = pd.Series([1.0] * (len(feat) - 1))
