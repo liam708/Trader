@@ -123,7 +123,13 @@ if __name__ == "__main__":
     print(f"Max DD: {100*m['max_drawdown']:.2f}%")
     print(f"AnnRet: {100*m['ann_return']:.2f}%  AnnVol: {100*m['ann_vol']:.2f}%  Sharpe: {m['sharpe']:.2f}")
     print(f"Avg weight: {m['avg_weight']:.2f}")
+
+    # 🔹 THIS GOES HERE 🔹
+    print(f"Total turnover: {curve['turnover'].sum():.2f}")
+    print(f"Avg weekly turnover: {curve['turnover'].mean():.4f}")
+    print(f"Total cost paid (sum t_cost): {curve['t_cost'].sum():.4f}")
+
     print(curve.tail())
 
-    # Optional: save curve to cache (ignored by git if you kept cache/ in .gitignore)
+    # Save for plotting / analysis
     curve.to_csv("cache/master_equity_curve.csv", index=False)
