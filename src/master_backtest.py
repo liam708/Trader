@@ -70,8 +70,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
 
             x = d.loc[i, FEATURES].values.reshape(1, -1)
             pred = int(model.predict(x)[0])
-            w = float(policy_weight(d.loc[i], pred))
-
+            w = float(policy_weight(d, i, pred))
         # Apply return to next week
         px0 = float(d.loc[i, "Close"])
         px1 = float(d.loc[i + 1, "Close"])
