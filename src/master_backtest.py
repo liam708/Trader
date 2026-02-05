@@ -125,10 +125,10 @@ if __name__ == "__main__":
     start_cap = float(CONFIG["start_capital"])
     final_cap = curve["equity"].iloc[-1]
     profit = final_cap - start_cap
-def dollar_summary(df, name):
-    start_cap = float(CONFIG["start_capital"])
-    final_cap = float(df["equity"].iloc[-1])
-    profit = final_cap - start_cap
+    def dollar_summary(df, name):
+        start_cap = float(CONFIG["start_capital"])
+        final_cap = float(df["equity"].iloc[-1])
+        profit = final_cap - start_cap
     return {
         "Period": name,
         "Final Portfolio ($)": round(final_cap, 2),
