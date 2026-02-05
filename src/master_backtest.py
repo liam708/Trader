@@ -116,8 +116,28 @@ if __name__ == "__main__":
     df["date"] = pd.to_datetime(df["date"])
 
     curve = run_master_backtest(df)
-    m = compute_metrics(curve)
+    curve["prev_equity"] = curve["equity"].shift(1)
+    curve.loc[curve.index[0], "prev_equity"] = CONFIG["start_capital"]
 
+    curve["invested_dollars"] = curve["prev_equity"] * curve["weight"]
+    m = compute_metrics(curve)
+    start_cap = float(CONFIG["start_capital"])
+    final_cap = curve["equity"].iloc[-1]
+    profit = final_cap - start_cap
+
+    summary = pd.DataFrame([{
+        "Start Capital ($)": round(start_cap, 2),
+        "Final Portfolio ($)": round(final_cap, 2),
+        "Pure Profit ($)": round(profit, 2),
+        "Avg Weekly Invested ($)": round(curve["invested_dollars"].mean(), 2),
+        "Total Capital Deployed ($)": round(curve["invested_dollars"].sum(), 2),
+        "Avg Weight": round(curve["weight"].mean(), 3),
+        "Total Turnover": round(curve["turnover"].sum(), 2),
+        "Total Cost Paid ($)": round(curve["cost_dollars"].sum(), 2),
+    }])
+
+    print("\nDOLLAR SUMMARY")
+    print(summary.to_string(index=False))
     print("MASTER REGIME + POLICY BACKTEST")
     print(f"Weeks: {m['weeks']}")
     print(f"Start: {m['start_equity']:.2f}  Final: {m['final_equity']:.2f}")
@@ -137,3 +157,4 @@ if __name__ == "__main__":
 
     # Save for plotting / analysis
     curve.to_csv("cache/master_equity_curve.csv", index=False)
+    summary.to_csv("cache/master_summary.csv", index=False)
