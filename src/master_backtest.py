@@ -120,11 +120,33 @@ if __name__ == "__main__":
     curve.loc[curve.index[0], "prev_equity"] = CONFIG["start_capital"]
 
     curve["invested_dollars"] = curve["prev_equity"] * curve["weight"]
+    active = curve[curve["pred_regime"].notna()].copy()
     m = compute_metrics(curve)
     start_cap = float(CONFIG["start_capital"])
     final_cap = curve["equity"].iloc[-1]
     profit = final_cap - start_cap
+    def dollar_summary(df, name):
+    start_cap = float(CONFIG["start_capital"])
+    final_cap = float(df["equity"].iloc[-1])
+    profit = final_cap - start_cap
+    return {
+        "Period": name,
+        "Final Portfolio ($)": round(final_cap, 2),
+        "Pure Profit ($)": round(profit, 2),
+        "Avg Weekly Invested ($)": round(df["invested_dollars"].mean(), 2),
+        "Total Capital Deployed ($)": round(df["invested_dollars"].sum(), 2),
+        "Avg Weight": round(df["weight"].mean(), 3),
+        "Total Turnover": round(df["turnover"].sum(), 2),
+        "Total Cost Paid ($)": round(df["cost_dollars"].sum(), 2),
+        "Weeks": int(len(df)),
+    }
 
+    summary = pd.DataFrame([
+        dollar_summary(curve, "FULL"),
+        dollar_summary(active, "ACTIVE (pred_regime!=None)")
+    ])
+
+    print(summary.to_string(index=False))
     summary = pd.DataFrame([{
         "Start Capital ($)": round(start_cap, 2),
         "Final Portfolio ($)": round(final_cap, 2),
