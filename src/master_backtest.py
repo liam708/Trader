@@ -93,7 +93,6 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
 
         net_ret = w * ret - t_cost
         cost_dollars = equity * t_cost
-        "cost_dollars": cost_dollars,
         equity *= (1.0 + net_ret)
         
         logs.append({
@@ -103,6 +102,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
             "weight": w,
             "turnover": turnover,
             "t_cost": t_cost,
+            "cost_dollars": cost_dollars,
             "week_ret": ret,
             "net_ret": net_ret,
             "equity": equity,
