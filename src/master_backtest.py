@@ -92,6 +92,8 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
         t_cost = turnover * cost
 
         net_ret = w * ret - t_cost
+        cost_dollars = equity * t_cost
+        "cost_dollars": cost_dollars,
         equity *= (1.0 + net_ret)
         
         logs.append({
@@ -128,6 +130,8 @@ if __name__ == "__main__":
     print(f"Total turnover: {curve['turnover'].sum():.2f}")
     print(f"Avg weekly turnover: {curve['turnover'].mean():.4f}")
     print(f"Total cost paid (sum t_cost): {curve['t_cost'].sum():.4f}")
+    print(f"Total cost paid ($): {curve['cost_dollars'].sum():.2f}")
+    print(f"Avg weekly cost ($): {curve['cost_dollars'].mean():.2f}")
 
     print(curve.tail())
 
