@@ -10,82 +10,83 @@ from regime_features import add_regime_features, FEATURES
 from regime_labels import add_regime_labels
 from metrics import compute_metrics
 
-def scalar(d: pd.DataFrame, i: int, col: str) -> float:
-    v = d.loc[i, col]
-    # If duplicate columns exist, pandas returns a Series
-    if isinstance(v, pd.Series):
-        v = v.iloc[0]
-    return float(v)
-    
-def year_fraction(d0, d1) -> float:
-    return (d1 - d0).days / 365.25
 
-def policy_weight(d: pd.DataFrame, i: int, pred_regime: int) -> float:
-    close = float(d.iloc[i]["Close"])
-    ma20  = float(d.iloc[i]["ma_20w"])
-    dist  = float(d.iloc[i]["dist_ma20"])
+def policy_weight(row: pd.Series, pred_regime: int) -> float:
+    """
+    row is a single row (pd.Series) from the feature dataframe
+    pred_regime: 2=STRESS, 1=TREND, 0=CHOP
+    """
+    close = float(row["Close"])
+    ma20 = float(row["ma_20w"])
+    dist = float(row["dist_ma20"])
 
     if pred_regime == 2:
-        return CONFIG["w_stress"]
+        return float(CONFIG["w_stress"])
 
     if pred_regime == 1:
-        if CONFIG["trend_requires_above_ma20"] and not (close > ma20):
+        if CONFIG.get("trend_requires_above_ma20", True) and not (close > ma20):
             return 0.0
-        return CONFIG["w_trend"]
+        return float(CONFIG["w_trend"])
 
-    if dist <= CONFIG["mr_dist_ma20_entry"]:
-        return CONFIG["w_chop_mr"]
-    return CONFIG["w_chop_base"]
+    # CHOP: mean-reversion entry if far below MA20
+    if dist <= float(CONFIG["mr_dist_ma20_entry"]):
+        return float(CONFIG["w_chop_mr"])
+    return float(CONFIG["w_chop_base"])
+
+
 def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
-    # Build features (safe)
+    # Build features (safe, no future)
     d = add_regime_features(df_prices)
 
-    # Add labels (only used for training targets)
+    # Add labels (uses future, but only to train targets)
     d = add_regime_labels(d, stress_dd_4w=CONFIG["stress_dd_4w"])
-    # If duplicate column names exist, keep the first occurrence
-    if d.columns.duplicated().any():
-        d = d.loc[:, ~d.columns.duplicated()]
-    # Drop rows without features/labels
+
+    # Keep only what we need and drop NaNs
     needed = ["date", "Close", "ma_20w", "dist_ma20"] + FEATURES + ["regime"]
     d = d[needed].dropna().reset_index(drop=True)
 
+    # Rolling walk-forward model
     model = Pipeline([
         ("scaler", StandardScaler()),
         ("clf", LogisticRegression(max_iter=800, class_weight="balanced"))
     ])
 
-    equity = CONFIG["start_capital"]
-    cost = CONFIG["cost_bps"] / 10_000
+    equity = float(CONFIG["start_capital"])
+    cost = float(CONFIG["cost_bps"]) / 10_000.0
 
     logs = []
 
     for i in range(len(d) - 1):
-        date = pd.to_datetime(d.loc[i, "date"])
-        next_date = pd.to_datetime(d.loc[i + 1, "date"])
+        row = d.iloc[i]
+        date = pd.to_datetime(row["date"])
+        next_date = pd.to_datetime(d.iloc[i + 1]["date"])
 
-        # Rolling training window by years (no lookahead)
+        # Rolling training window: last N years ending at "date" (exclusive)
         train_end = date
-        train_start = train_end - pd.Timedelta(days=int(CONFIG["train_years"] * 365.25))
+        train_start = train_end - pd.Timedelta(days=int(float(CONFIG["train_years"]) * 365.25))
 
-        train = d[(pd.to_datetime(d["date"]) < train_end) & (pd.to_datetime(d["date"]) >= train_start)]
-        if len(train) < CONFIG["min_train_rows"]:
-            # not enough history yet; stay flat
-            w = 0.0
+        # Filter training data strictly before current date
+        dates = pd.to_datetime(d["date"])
+        train = d[(dates < train_end) & (dates >= train_start)]
+
+        if len(train) < int(CONFIG["min_train_rows"]):
             pred = None
+            w = 0.0
         else:
             Xtr = train[FEATURES].values
             ytr = train["regime"].values
             model.fit(Xtr, ytr)
 
-            x = d.loc[i, FEATURES].values.reshape(1, -1)
+            x = row[FEATURES].values.reshape(1, -1)
             pred = int(model.predict(x)[0])
-            w = float(policy_weight(d, i, pred))
-        # Apply return to next week
-        px0 = float(d.loc[i, "Close"])
-        px1 = float(d.loc[i + 1, "Close"])
+            w = float(policy_weight(row, pred))
+
+        # Next week return
+        px0 = float(row["Close"])
+        px1 = float(d.iloc[i + 1]["Close"])
         ret = (px1 / px0) - 1.0
 
-        # Cost if exposed this week
+        # Simple cost: pay cost when exposed
         net_ret = w * ret - (cost if w > 0 else 0.0)
         equity *= (1.0 + net_ret)
 
@@ -100,6 +101,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
         })
 
     return pd.DataFrame(logs)
+
 
 if __name__ == "__main__":
     df = pd.read_csv("data/spy_weekly.csv")
@@ -116,4 +118,6 @@ if __name__ == "__main__":
     print(f"AnnRet: {100*m['ann_return']:.2f}%  AnnVol: {100*m['ann_vol']:.2f}%  Sharpe: {m['sharpe']:.2f}")
     print(f"Avg weight: {m['avg_weight']:.2f}")
     print(curve.tail())
+
+    # Optional: save curve to cache (ignored by git if you kept cache/ in .gitignore)
     curve.to_csv("cache/master_equity_curve.csv", index=False)
