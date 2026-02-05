@@ -19,11 +19,18 @@ if isinstance(df.columns, pd.MultiIndex):
 
 df = df.reset_index()
 
-# Force numeric types (THIS is the important part)
+# Normalize date column name
+if "Date" in df.columns:
+    df.rename(columns={"Date": "date"}, inplace=True)
+elif "Datetime" in df.columns:
+    df.rename(columns={"Datetime": "date"}, inplace=True)
+
+# Force numeric types
 for col in ["Open", "High", "Low", "Close", "Volume"]:
-    df[col] = pd.to_numeric(df[col], errors="coerce")
+    if col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce")
 
 df = df.dropna()
 
 df.to_csv(OUT, index=False)
-print("Saved:", OUT, "rows:", len(df))
+print("Saved:", OUT, "rows:", len(df), "cols:", list(df.columns))
