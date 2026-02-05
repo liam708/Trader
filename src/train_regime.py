@@ -17,7 +17,7 @@ def walk_forward_regime(data: pd.DataFrame, train_years=10, test_years=2):
     # Multiclass logistic regression
     model = Pipeline([
         ("scaler", StandardScaler()),
-        ("clf", LogisticRegression(max_iter=800, class_weight="balanced", multi_class="auto"))
+        ("clf", LogisticRegression(max_iter=800, class_weight="balanced"))
     ])
 
     rows = []
