@@ -1,44 +1,56 @@
-import numpy as np
 import pandas as pd
+import numpy as np
+
+from monthly_metrics import rolling_monthly_metrics
+from compare_strategies import simulate_from_weights
+from master_backtest import run_master_backtest
+from regime_features import add_regime_features
+from config import CONFIG
 
 
-def rolling_monthly_metrics(curve: pd.DataFrame, window=4, start_capital: float = 10000.0) -> pd.DataFrame:
-    """
-    curve must have: ['date','equity','weight']
-    Optional: ['invested_dollars'] or ['prev_equity']
-    window = number of weeks (4 ≈ 1 month)
-    """
-    c = curve.copy()
+def summarize_monthly(df, label):
+    return {
+        "Strategy": label,
+        "Mean 1M Ret (%)": 100 * df["month_ret"].mean(),
+        "Median 1M Ret (%)": 100 * df["month_ret"].median(),
+        "Worst 1M Ret (%)": 100 * df["month_ret"].min(),
+        "5% Tail Ret (%)": 100 * df["month_ret"].quantile(0.05),
+        "Loss Months (%)": 100 * df["loss"].mean(),
+        "Avg $ Invested": df["avg_invested"].mean(),
+        "Obs": len(df),
+    }
 
-    # If invested_dollars isn't present, compute it safely
-    if "invested_dollars" not in c.columns:
-        if "prev_equity" not in c.columns:
-            c["prev_equity"] = c["equity"].shift(1)
-            c.loc[c.index[0], "prev_equity"] = float(start_capital)
-        c["invested_dollars"] = c["prev_equity"] * c["weight"]
 
-    rows = []
-    for i in range(len(c) - window):
-        start_eq = c.iloc[i]["equity"]
-        end_eq = c.iloc[i + window]["equity"]
+def main():
+    df = pd.read_csv("data/spy_weekly.csv")
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date").reset_index(drop=True)
 
-        window_slice = c.iloc[i:i+window+1]
-        eq_path = window_slice["equity"].values
+    # ===== MASTER =====
+    master = run_master_backtest(df)
+    m_month = rolling_monthly_metrics(master)
 
-        ret = (end_eq / start_eq) - 1.0
+    # ===== BUY & HOLD =====
+    feat = add_regime_features(df).dropna(subset=["ma_20w"]).reset_index(drop=True)
+    w_bh = pd.Series([1.0] * (len(feat) - 1))
+    bh = simulate_from_weights(feat, w_bh, "BuyHold")
+    bh_month = rolling_monthly_metrics(bh)
 
-        peak = np.maximum.accumulate(eq_path)
-        dd = (eq_path / peak - 1.0).min()
+    # ===== MA20 =====
+    w_ma20 = (feat["Close"] > feat["ma_20w"]).astype(float).iloc[:-1]
+    ma20 = simulate_from_weights(feat, w_ma20, "MA20")
+    ma20_month = rolling_monthly_metrics(ma20)
 
-        avg_invested = window_slice["invested_dollars"].mean()
+    table = pd.DataFrame([
+        summarize_monthly(bh_month, "Buy & Hold"),
+        summarize_monthly(ma20_month, "MA20 Trend"),
+        summarize_monthly(m_month, "Master Strategy"),
+    ])
 
-        rows.append({
-            "start_date": c.iloc[i]["date"],
-            "end_date": c.iloc[i + window]["date"],
-            "month_ret": ret,
-            "month_dd": dd,
-            "avg_invested": avg_invested,
-            "loss": ret < 0,
-        })
+    pd.set_option("display.width", 200)
+    print("\nROLLING 1-MONTH PERFORMANCE (4-week windows)")
+    print(table.to_string(index=False))
 
-    return pd.DataFrame(rows)
+
+if __name__ == "__main__":
+    main()
