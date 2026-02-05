@@ -109,3 +109,4 @@ if __name__ == "__main__":
     print(f"AnnRet: {100*m['ann_return']:.2f}%  AnnVol: {100*m['ann_vol']:.2f}%  Sharpe: {m['sharpe']:.2f}")
     print(f"Avg weight: {m['avg_weight']:.2f}")
     print(curve.tail())
+    curve.to_csv("cache/master_equity_curve.csv", index=False)
