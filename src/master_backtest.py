@@ -87,8 +87,11 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
         px1 = float(d.iloc[i + 1]["Close"])
         ret = (px1 / px0) - 1.0
 
-        # Simple cost: pay cost when exposed
-        net_ret = w * ret - (cost if w > 0 else 0.0)
+        # Transaction cost paid only when weight changes (turnover-based)
+        turnover = abs(w - prev_w)
+        t_cost = turnover * cost
+
+        net_ret = w * ret - t_cost
         equity *= (1.0 + net_ret)
 
         logs.append({
