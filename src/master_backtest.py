@@ -55,6 +55,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
     cost = float(CONFIG["cost_bps"]) / 10_000.0
 
     logs = []
+    prev_w = 0.0  # previous week's weight
 
     for i in range(len(d) - 1):
         row = d.iloc[i]
