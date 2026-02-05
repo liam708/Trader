@@ -13,11 +13,10 @@ from metrics import compute_metrics
 def year_fraction(d0, d1) -> float:
     return (d1 - d0).days / 365.25
 
-def policy_weight(row, pred_regime: int) -> float:
-    # Force scalars (pandas can be annoying)
-    close = float(row["Close"])
-    ma20  = float(row["ma_20w"])
-    dist  = float(row["dist_ma20"])
+def policy_weight(d, i, pred_regime: int) -> float:
+    close = float(d.at[i, "Close"])
+    ma20  = float(d.at[i, "ma_20w"])
+    dist  = float(d.at[i, "dist_ma20"])
 
     if pred_regime == 2:
         return CONFIG["w_stress"]
@@ -27,7 +26,6 @@ def policy_weight(row, pred_regime: int) -> float:
             return 0.0
         return CONFIG["w_trend"]
 
-    # CHOP mean-reversion entry
     if dist <= CONFIG["mr_dist_ma20_entry"]:
         return CONFIG["w_chop_mr"]
     return CONFIG["w_chop_base"]
