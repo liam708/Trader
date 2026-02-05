@@ -42,8 +42,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
     d = add_regime_labels(d, stress_dd_4w=CONFIG["stress_dd_4w"])
 
     # Keep only what we need and drop NaNs
-    needed = ["date", "Close", "ma_20w", "dist_ma20"] + FEATURES + ["regime"]
-    d = d[needed].dropna().reset_index(drop=True)
+    needed = ["date", "Close", "ma_20w"] + FEATURES + ["regime"]    d = d[needed].dropna().reset_index(drop=True)
 
     # Rolling walk-forward model
     model = Pipeline([
