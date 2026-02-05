@@ -129,17 +129,17 @@ if __name__ == "__main__":
         start_cap = float(CONFIG["start_capital"])
         final_cap = float(df["equity"].iloc[-1])
         profit = final_cap - start_cap
-    return {
-        "Period": name,
-        "Final Portfolio ($)": round(final_cap, 2),
-        "Pure Profit ($)": round(profit, 2),
-        "Avg Weekly Invested ($)": round(df["invested_dollars"].mean(), 2),
-        "Total Capital Deployed ($)": round(df["invested_dollars"].sum(), 2),
-        "Avg Weight": round(df["weight"].mean(), 3),
-        "Total Turnover": round(df["turnover"].sum(), 2),
-        "Total Cost Paid ($)": round(df["cost_dollars"].sum(), 2),
-        "Weeks": int(len(df)),
-    }
+        return {
+            "Period": name,
+            "Final Portfolio ($)": round(final_cap, 2),
+            "Pure Profit ($)": round(profit, 2),
+            "Avg Weekly Invested ($)": round(df["invested_dollars"].mean(), 2),
+            "Total Capital Deployed ($)": round(df["invested_dollars"].sum(), 2),
+            "Avg Weight": round(df["weight"].mean(), 3),
+            "Total Turnover": round(df["turnover"].sum(), 2),
+            "Total Cost Paid ($)": round(df["cost_dollars"].sum(), 2),
+            "Weeks": int(len(df)),
+        }
 
     summary = pd.DataFrame([
         dollar_summary(curve, "FULL"),
