@@ -56,6 +56,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
 
     logs = []
     prev_w = 0.0  # previous week's weight
+    cooldown = 0  # panic cooldown remaining (weeks)
 
     for i in range(len(d) - 1):
         row = d.iloc[i]
