@@ -62,7 +62,29 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
         row = d.iloc[i]
         date = pd.to_datetime(row["date"])
         next_date = pd.to_datetime(d.iloc[i + 1]["date"])
+                # ===== Panic exit logic (uses last week's realized return) =====
+        panic = False
+        panic_trigger = float(CONFIG.get("panic_ret_1w", -0.05))
+        panic_cooldown_weeks = int(CONFIG.get("panic_cooldown_weeks", 4))
 
+        if cooldown > 0:
+            # still in forced-cash period
+            panic = True
+            cooldown -= 1
+            pred = None
+            w = 0.0
+        else:
+            # check last week's return to decide if we should panic now
+            if i >= 1:
+                px_prev = float(d.iloc[i - 1]["Close"])
+                px_now = float(row["Close"])
+                last_ret = (px_now / px_prev) - 1.0
+
+                if last_ret <= panic_trigger:
+                    panic = True
+                    cooldown = panic_cooldown_weeks - 1  # this week is already forced flat
+                    pred = None
+                    w = 0.0
         # Rolling training window: last N years ending at "date" (exclusive)
         train_end = date
         train_start = train_end - pd.Timedelta(days=int(float(CONFIG["train_years"]) * 365.25))
