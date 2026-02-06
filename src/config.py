@@ -16,6 +16,9 @@ CONFIG = {
     "w_stress": 0.0,
     "w_trend": 1.0,
     "w_chop_base": 0.5,
+    # Panic exit (weekly)
+    "panic_ret_1w": -0.05,          # trigger if last week's return <= -5%
+    "panic_cooldown_weeks": 4,      # stay flat for 4 weeks after trigger
 
     # CHOP mean-reversion rule (simple, interpretable)
     "mr_dist_ma20_entry": -0.02,  # if price is >2% below MA20 in CHOP => go long
