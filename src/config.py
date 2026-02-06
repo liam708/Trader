@@ -15,7 +15,7 @@ CONFIG = {
     # Policy sizing
     "w_stress": 0.0,
     "w_trend": 1.0,
-    "w_chop_base": 0.0,
+    "w_chop_base": 0.5,
 
     # CHOP mean-reversion rule (simple, interpretable)
     "mr_dist_ma20_entry": -0.02,  # if price is >2% below MA20 in CHOP => go long
