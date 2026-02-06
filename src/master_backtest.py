@@ -93,17 +93,18 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
         dates = pd.to_datetime(d["date"])
         train = d[(dates < train_end) & (dates >= train_start)]
 
-        if len(train) < int(CONFIG["min_train_rows"]):
-            pred = None
-            w = 0.0
-        else:
-            Xtr = train[FEATURES].values
-            ytr = train["regime"].values
-            model.fit(Xtr, ytr)
+        if not panic:
+            if len(train) < int(CONFIG["min_train_rows"]):
+                pred = None
+                w = 0.0
+            else:
+                Xtr = train[FEATURES].values
+                ytr = train["regime"].values
+                model.fit(Xtr, ytr)
 
-            x = row[FEATURES].values.reshape(1, -1)
-            pred = int(model.predict(x)[0])
-            w = float(policy_weight(row, pred))
+                x = row[FEATURES].values.reshape(1, -1)
+                pred = int(model.predict(x)[0])
+                w = float(policy_weight(row, pred))
 
         # Next week return
         px0 = float(row["Close"])
@@ -129,6 +130,7 @@ def run_master_backtest(df_prices: pd.DataFrame) -> pd.DataFrame:
             "week_ret": ret,
             "net_ret": net_ret,
             "equity": equity,
+            "panic": panic,
         })
         prev_w = w
     return pd.DataFrame(logs)
