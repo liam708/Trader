@@ -30,7 +30,8 @@ def rolling_monthly_metrics(curve: pd.DataFrame, window=4, start_capital: float 
         peak = np.maximum.accumulate(eq_path)
         dd = (eq_path / peak - 1.0).min()
 
-        avg_invested = window_slice["invested_dollars"].mean()
+        profit_dollars = end_eq - start_eq
+        ret_per_dollar = profit_dollars / max(avg_invested, 1e-9)
 
         rows.append({
             "start_date": c.iloc[i]["date"],
@@ -38,6 +39,8 @@ def rolling_monthly_metrics(curve: pd.DataFrame, window=4, start_capital: float 
             "month_ret": ret,
             "month_dd": dd,
             "avg_invested": avg_invested,
+            "profit_dollars": profit_dollars,
+            "ret_per_dollar": ret_per_dollar,
             "loss": ret < 0,
         })
 
