@@ -17,6 +17,9 @@ def summarize_monthly(df, label):
         "5% Tail Ret (%)": 100 * df["month_ret"].quantile(0.05),
         "Loss Months (%)": 100 * df["loss"].mean(),
         "Avg $ Invested": df["avg_invested"].mean(),
+        # NEW: capital efficiency
+        "Mean $ Profit / $ Invested": df["ret_per_dollar"].mean(),
+        "5% Tail $ Profit / $": df["ret_per_dollar"].quantile(0.05),
         "Obs": len(df),
     }
 
