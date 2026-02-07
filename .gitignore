@@ -1,4 +1,13 @@
 __pycache__/
+*.pyc
+.venv/
+venv/
 .env
-cache/
+.DS_Store
+
+# data + outputs
 data/
+cache/
+output/
+*_accounting.csv
+*_monthly.csv
